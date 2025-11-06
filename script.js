@@ -11,9 +11,9 @@ const date = document.getElementById("date");
 date.textContent = time();
 
 const giveUpBtn = document.getElementById("giveUpBtn");
-const fastestEl = document.getElementById("fastestTime");
-const totalTimeEl = document.getElementById("totalTime");
-const avgTimeEl = document.getElementById("avgTime");
+const fastestSp = document.getElementById("fastestTime");
+const totalTimeSp = document.getElementById("totalTime");
+const avgTimeSp = document.getElementById("avgTime");
 
 // add event listeners
 nameBtn.addEventListener("click", nameCheck)
@@ -70,7 +70,7 @@ function play(){
 
   msg.textContent = nameCap + ", guess a number from 1-" + level;
   answer = Math.floor(Math.random()*level)+1;
-  guess.placeholder = answer;
+  guess.placeholder = "";
 
   // start timer
   start = new Date().getTime();
@@ -91,7 +91,14 @@ function makeGuess(){
         clearInterval(timeInterval);
         let rating = scoreRating(score,level);
         updateTimer();
-        msg.textContent = "You got it " + nameCap + "! It took you " + score + " tries. Your score was: " + rating + ". Press play to play again";
+        let tryGrammar;
+        if (score==1){
+            tryGrammar = "try";
+        }
+        else{
+            tryGrammar = "tries";
+        }
+        msg.textContent = "You got it " + nameCap + "! It took you " + score + " " + tryGrammar + ". Your score was: " + rating + ". Press play to play again";
         updateScore();
         recordTime();
         reset();
@@ -211,9 +218,9 @@ function recordTime(){
     
     let avg = totalTime / timeArr.length;
     
-     fastestEl.textContent = "Fastest Game: " + fastestTime.toFixed(2) + " seconds";
-    totalTimeEl.textContent = "Total Time: " + totalTime.toFixed(2) + " seconds";
-    avgTimeEl.textContent = "Average Time: " + avg.toFixed(2) + " seconds";
+     fastestSp.textContent = "Fastest Game: " + fastestTime.toFixed(2) + " seconds";
+    totalTimeSp.textContent = "Total Time: " + totalTime.toFixed(2) + " seconds";
+    avgTimeSp.textContent = "Average Time: " + avg.toFixed(2) + " seconds";
 }
 
 function scoreRating(score, level){
@@ -279,3 +286,64 @@ let today = "Today's date is " + month + " " + currentdate + dateSuffix + ", " +
 date.textContent = today
 }
 setInterval(time, 1000);
+
+// --- Keyboard shortcuts ---
+// Enter: submit name (when name input focused) or submit guess (when guess input focused)
+// Escape: clear focused input / clear messages
+// ArrowUp/ArrowDown: increment/decrement guess input when focused
+// Command (⌘) + G: Give Up
+document.addEventListener('keydown', function (e) {
+    // Ignore shortcuts when modifier keys (except Alt for our combos) would interfere
+    const activeId = document.activeElement && document.activeElement.id;
+
+    if (e.key === 'Enter') {
+        if (activeId === 'nameInput') {
+            // submit name
+            if (typeof nameCheck === 'function') {
+                nameCheck();
+                e.preventDefault();
+            }
+        } else if (activeId === 'guess') {
+            // submit guess
+            if (!guess.disabled && typeof makeGuess === 'function') {
+                makeGuess();
+                e.preventDefault();
+            }
+        }
+    }
+
+    if (e.key === 'Escape') {
+        // clear currently-focused input or clear message
+        if (activeId === 'guess') {
+            guess.value = '';
+        } else if (activeId === 'nameInput') {
+            nameInput.value = '';
+        } else {
+            // clear message if nothing focused
+            if (msg) msg.textContent = '';
+        }
+    }
+
+    if ((e.key === 'ArrowUp' || e.key === 'ArrowDown') && activeId === 'guess') {
+        // increment or decrement numeric guess value
+        let cur = parseInt(guess.value, 10);
+        if (isNaN(cur)) cur = 0;
+        cur += (e.key === 'ArrowUp') ? 1 : -1;
+        // clamp to valid range (1..level) if level defined
+        if (typeof level !== 'undefined') {
+            cur = Math.max(1, Math.min(parseInt(level, 10), cur));
+        } else {
+            cur = Math.max(1, cur);
+        }
+        guess.value = cur;
+        e.preventDefault();
+    }
+
+    // Command+G -> Give Up
+    if (e.metaKey && (e.key === 'g' || e.key === 'G')) {
+        if (giveUpBtn && !giveUpBtn.disabled) {
+            giveUpBtn.click();
+            e.preventDefault();
+        }
+    }
+});
